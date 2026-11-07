@@ -8,10 +8,13 @@
 
 from __future__ import annotations
 
+import gzip
 import json
 import os
 import time
+import urllib.error
 import urllib.request
+import zlib
 import xml.etree.ElementTree as ET
 from datetime import date
 
@@ -26,9 +29,18 @@ def _ua() -> str:
 
 
 def _get(url: str) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": _ua(), "Accept-Encoding": "identity"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return resp.read()
+    req = urllib.request.Request(url, headers={"User-Agent": _ua(), "Accept-Encoding": "gzip, deflate"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            body = resp.read()
+            if resp.headers.get("Content-Encoding") == "gzip":
+                body = gzip.decompress(body)
+            elif resp.headers.get("Content-Encoding") == "deflate":
+                body = zlib.decompress(body)
+            return body
+    except urllib.error.HTTPError as e:
+        detail = e.read()[:300].decode("utf-8", "replace").replace("\n", " ")
+        raise RuntimeError(f"{e.code} {url} (UA={_ua()!r}) {detail}") from None
 
 
 # ---------------------------------------------------------------- SEC 조회
