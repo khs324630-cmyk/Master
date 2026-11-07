@@ -3,6 +3,7 @@
 조건
   - S&P 500 지수가 전일 종가 대비 DROP_THRESHOLD(기본 -5%) 이하
   - CNN Fear & Greed Index가 FNG_THRESHOLD(기본 20) 이하
+  - 버크셔 해서웨이 새 13F 공시 (brk.py)
 
 알림 채널 (설정된 것 모두 사용)
   - 아이폰/브라우저 웹 푸시: PUSH_CONFIG  (웹앱의 '알림 켜기'에서 복사한 JSON, 여러 기기면 JSON 배열)
@@ -27,6 +28,8 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
+
+import brk
 
 YAHOO_URL = "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=3mo&interval=1d"
 CNN_URL = "https://production.dataviz.cnn.io/index/fearandgreed/graphdata"
@@ -228,6 +231,12 @@ def save_json(path: str, data: dict) -> None:
         json.dump(data, f, ensure_ascii=False, indent=1)
 
 
+def log_alert(state: dict, alert: dict) -> None:
+    log = state.setdefault("log", [])
+    log.append({"t": datetime.now(timezone.utc).isoformat(timespec="seconds"), "title": alert["title"]})
+    state["log"] = log[-20:]
+
+
 # ---------------------------------------------------------------- main
 
 def main() -> int:
@@ -278,10 +287,27 @@ def main() -> int:
         print(f"알림 전송 ({n}곳): {alert['title']}")
         if n:
             state[key] = mark
-            state.setdefault("log", []).append(
-                {"t": datetime.now(timezone.utc).isoformat(timespec="seconds"), "title": alert["title"]}
-            )
-            state["log"] = state["log"][-20:]
+            log_alert(state, alert)
+
+    # 버크셔 해서웨이 13F 포트폴리오
+    brk_cache = state.get("brk", {})
+    try:
+        brk_cache, brk_alert = brk.update(brk_cache)
+        pf = brk_cache["portfolio"]
+        print(f"버크셔 13F: {pf['quarter']} (공시 {pf['filed']}), {len(pf['holdings'])}종목")
+        if brk_alert:
+            if args.dry_run:
+                print(f"[dry-run] {brk_alert['title']}")
+            else:
+                n = notify(brk_alert)
+                print(f"알림 전송 ({n}곳): {brk_alert['title']}")
+                log_alert(state, brk_alert)
+        if not args.dry_run:
+            state["brk"] = brk_cache
+    except Exception as e:  # noqa: BLE001
+        errors["brk"] = str(e)
+        print(f"버크셔 13F 조회 실패: {e}", file=sys.stderr)
+
     if not args.dry_run:
         save_json(state_file, state)
 
@@ -291,12 +317,13 @@ def main() -> int:
             "thresholds": {"drop": drop_threshold, "fng": fng_threshold},
             "sp500": sp,
             "fng": fng,
+            "brk": brk_cache.get("portfolio"),
             "errors": errors,
             "alerts": state.get("log", []),
         })
 
-    # 두 데이터 모두 실패하면 워크플로가 실패로 표시되도록
-    return 1 if len(errors) == 2 else 0
+    # 시장 데이터 두 개가 모두 실패하면 워크플로가 실패로 표시되도록
+    return 1 if {"sp500", "fng"} <= errors.keys() else 0
 
 
 if __name__ == "__main__":

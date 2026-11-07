@@ -8,7 +8,7 @@ on:
     - cron: "0 0,12 * * *"
   push:
     branches: [main, master, claude/friendly-fermi-96u8fi]
-    paths: ["web/**", "alert.py", ".github/workflows/alert.yml"]
+    paths: ["web/**", "*.py", ".github/workflows/alert.yml"]
   workflow_dispatch:
     inputs:
       test:
@@ -39,6 +39,7 @@ jobs:
       NTFY_SERVER: ${{ vars.NTFY_SERVER || 'https://ntfy.sh' }}
       DROP_THRESHOLD: ${{ vars.DROP_THRESHOLD || '-5' }}
       FNG_THRESHOLD: ${{ vars.FNG_THRESHOLD || '20' }}
+      SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
     steps:
       - uses: actions/checkout@v4
 
