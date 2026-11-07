@@ -11,6 +11,58 @@ const RATING_KO = {
 };
 
 const $ = (id) => document.getElementById(id);
+
+// ------------------------------------------------------------ 알림 기준 (이 기기)
+
+const TH_KEY = "market-alert-thresholds";
+const COPIED_KEY = "market-alert-copied";
+const DROP_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const FNG_OPTIONS = [5, 10, 15, 20, 25];
+
+function lsGet(key, fallback) {
+  try {
+    const v = localStorage.getItem(key);
+    return v == null ? fallback : JSON.parse(v);
+  } catch {
+    return fallback;
+  }
+}
+function lsSet(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+}
+
+function getThresholds() {
+  const t = lsGet(TH_KEY, {});
+  return {
+    drop: DROP_OPTIONS.includes(t.drop) ? t.drop : 5,
+    fng: FNG_OPTIONS.includes(t.fng) ? t.fng : 20,
+  };
+}
+
+let lastData = null;
+let currentConfig = null;
+
+function updateWarn() {
+  const copied = lsGet(COPIED_KEY, null);
+  $("th-warn").hidden = !(currentConfig && copied && copied !== currentConfig);
+}
+
+function setupThresholdControls() {
+  const t = getThresholds();
+  $("sel-drop").innerHTML = DROP_OPTIONS.map((n) => `<option value="${n}">-${n}% 이하</option>`).join("");
+  $("sel-fng").innerHTML = FNG_OPTIONS.map((n) => `<option value="${n}">${n} 이하</option>`).join("");
+  $("sel-drop").value = String(t.drop);
+  $("sel-fng").value = String(t.fng);
+  const onChange = () => {
+    lsSet(TH_KEY, { drop: Number($("sel-drop").value), fng: Number($("sel-fng").value) });
+    if (lastData) render(lastData);
+    renderPush().catch(() => {});
+  };
+  $("sel-drop").onchange = onChange;
+  $("sel-fng").onchange = onChange;
+}
 const fmt = (n, d = 2) => n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 
 // ------------------------------------------------------------ 대시보드
@@ -48,7 +100,9 @@ function sparkline(el, points, { threshold, color } = {}) {
 }
 
 function render(data) {
-  const t = data.thresholds || { drop: -5, fng: 20 };
+  lastData = data;
+  const th = getThresholds();
+  const t = { drop: -th.drop, fng: th.fng };
   const updated = new Date(data.updated_at);
   $("updated").textContent = `업데이트 ${updated.toLocaleString("ko-KR", {
     month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit",
@@ -273,7 +327,15 @@ async function renderPush() {
   }
 
   show("tpl-on");
-  const config = JSON.stringify({ subscription: sub.toJSON(), vapid_private_key: keys.d });
+  const th = getThresholds();
+  const config = JSON.stringify({
+    subscription: sub.toJSON(),
+    vapid_private_key: keys.d,
+    drop: -th.drop,
+    fng: th.fng,
+  });
+  currentConfig = config;
+  updateWarn();
   $("cfg").value = config;
   $("secret-link").href = `https://github.com/${REPO}/settings/secrets/actions/new`;
   $("btn-copy").onclick = async () => {
@@ -284,6 +346,8 @@ async function renderPush() {
       $("cfg").select();
       document.execCommand("copy");
     }
+    lsSet(COPIED_KEY, config);
+    updateWarn();
     $("btn-copy").textContent = "복사됨 ✓";
     setTimeout(() => ($("btn-copy").textContent = "연결 코드 복사"), 2000);
   };
@@ -296,6 +360,8 @@ async function renderPush() {
     if (!confirm("새 연결 코드를 만들면 GitHub의 PUSH_CONFIG도 새 코드로 바꿔야 합니다. 계속할까요?")) return;
     await sub.unsubscribe();
     storage("del");
+    currentConfig = null;
+    updateWarn();
     renderPush();
   };
 }
@@ -330,6 +396,7 @@ async function enablePush() {
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
+setupThresholdControls();
 loadData();
 renderPush().catch((e) => message(`알림 상태를 확인하지 못했습니다: ${escapeHtml(e.message || e)}`));
 document.addEventListener("visibilitychange", () => {

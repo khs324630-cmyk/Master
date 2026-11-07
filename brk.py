@@ -11,6 +11,7 @@ from __future__ import annotations
 import gzip
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -39,7 +40,11 @@ def _get(url: str) -> bytes:
                 body = zlib.decompress(body)
             return body
     except urllib.error.HTTPError as e:
-        detail = e.read()[:300].decode("utf-8", "replace").replace("\n", " ")
+        raw = e.read()
+        if raw[:2] == b"\x1f\x8b":
+            raw = gzip.decompress(raw)
+        text = re.sub(r"<[^>]+>", " ", raw.decode("utf-8", "replace"))
+        detail = " ".join(text.split())[:400]
         raise RuntimeError(f"{e.code} {url} (UA={_ua()!r}) {detail}") from None
 
 

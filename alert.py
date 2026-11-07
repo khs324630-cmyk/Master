@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -159,9 +160,13 @@ def load_push_configs() -> list[dict]:
     return data if isinstance(data, list) else [data]
 
 
-def send_webpush(alert: dict) -> int:
-    """등록된 모든 기기에 웹 푸시. 성공한 기기 수 반환."""
-    configs = load_push_configs()
+def device_id(cfg: dict) -> str:
+    return "push:" + hashlib.sha256(cfg["subscription"]["endpoint"].encode()).hexdigest()[:12]
+
+
+def send_webpush(alert: dict, configs: list[dict] | None = None) -> int:
+    """웹 푸시 전송 (configs 생략 시 등록된 모든 기기). 성공한 기기 수 반환."""
+    configs = load_push_configs() if configs is None else configs
     if not configs:
         return 0
     from py_vapid import Vapid
@@ -276,18 +281,38 @@ def main() -> int:
         print(f"Fear & Greed 조회 실패: {e}", file=sys.stderr)
 
     state = load_json(state_file)
-    alerts = evaluate(sp, fng, state, today, drop_threshold, fng_threshold)
-    if not alerts:
-        print("알림 조건에 해당하지 않습니다.")
-    for key, mark, alert in alerts:
-        if args.dry_run:
-            print(f"[dry-run] {alert['title']}")
-            continue
-        n = notify(alert)
-        print(f"알림 전송 ({n}곳): {alert['title']}")
-        if n:
-            state[key] = mark
-            log_alert(state, alert)
+    # 알림 대상별 기준: 웹 푸시는 기기마다 앱에서 고른 기준(연결 코드에 포함), ntfy는 공통 기준
+    targets = []
+    for cfg in load_push_configs():
+        targets.append((
+            device_id(cfg),
+            float(cfg.get("drop", drop_threshold)),
+            float(cfg.get("fng", fng_threshold)),
+            lambda a, cfg=cfg: send_webpush(a, [cfg]),
+        ))
+    if os.environ.get("NTFY_TOPIC"):
+        targets.append(("ntfy", drop_threshold, fng_threshold, send_ntfy))
+
+    target_state = state.setdefault("targets", {})
+    sent_titles: list[str] = []
+    for tid, drop, fng_t, send in targets:
+        tstate = target_state.setdefault(tid, {})
+        for key, mark, alert in evaluate(sp, fng, tstate, today, drop, fng_t):
+            if args.dry_run:
+                print(f"[dry-run] {tid}: {alert['title']}")
+                continue
+            if send(alert):
+                tstate[key] = mark
+                print(f"알림 전송 ({tid}, 기준 {drop:g}% / {fng_t:g}): {alert['title']}")
+                if alert["title"] not in sent_titles:
+                    sent_titles.append(alert["title"])
+    for title in sent_titles:
+        log_alert(state, {"title": title})
+    if not sent_titles:
+        print("새로 보낼 알림이 없습니다.")
+    # 더 이상 등록되지 않은 기기의 상태 정리
+    for tid in set(target_state) - {t[0] for t in targets}:
+        del target_state[tid]
 
     # 버크셔 해서웨이 13F 포트폴리오
     brk_cache = state.get("brk", {})

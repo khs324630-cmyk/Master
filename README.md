@@ -37,9 +37,17 @@ S&P 500이 **하루 5% 이상 급락**하거나 CNN **Fear & Greed Index가 20 �
 > 여러 기기에서 받으려면 각 기기의 코드를 `[코드1, 코드2]`처럼 묶어서 넣습니다.
 > 앱을 지웠다가 다시 설치하면 코드가 바뀌므로 다시 등록해야 합니다.
 
-## 기준 바꾸기 (선택)
+## 알림 기준 바꾸기
 
-**Settings → Secrets and variables → Actions → Variables** 탭에서 아래 변수를 추가합니다.
+앱의 **알림 기준** 카드에서 고릅니다. 기준은 기기마다 따로 저장됩니다.
+
+- S&P 500 하루 하락률: -1% ~ -10% (1% 단위)
+- Fear & Greed 지수: 5 / 10 / 15 / 20 / 25 이하
+
+알림은 GitHub Actions가 보내므로, 기준을 바꾼 뒤에는 **연결 코드 복사**를 다시 눌러 GitHub Secret `PUSH_CONFIG`를 새 코드로 바꿔야 적용됩니다.
+앱에 노란 안내 문구가 떠 있으면 아직 바꾸지 않은 상태입니다.
+
+ntfy 알림의 기준은 **Settings → Secrets and variables → Actions → Variables** 탭에서 아래 변수로 정합니다.
 
 | Variable | 설명 | 기본값 |
 |---|---|---|

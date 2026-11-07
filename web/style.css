@@ -186,3 +186,32 @@ a.chip { text-decoration: none; }
 .badge.out { background: var(--down); color: #fff; }
 .sold .h-name { color: var(--muted); }
 .note { padding: 0 4px; margin: 4px 0 16px; }
+
+/* 알림 기준 */
+.field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.card > h2 + .field { border-top: 0; }
+.field label { font-size: 15px; }
+select {
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 12px;
+  width: 136px;
+}
+.warn {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  background: color-mix(in srgb, var(--neutral) 16%, transparent);
+}

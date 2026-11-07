@@ -50,6 +50,19 @@
       <div class="gauge-labels muted"><span>극단적 공포</span><span>중립</span><span>극단적 탐욕</span></div>
       <div class="spark" id="fg-spark"></div>
     </section>
+
+    <section class="card">
+      <h2>알림 기준</h2>
+      <div class="field">
+        <label for="sel-drop">S&amp;P 500 하루 하락률</label>
+        <select id="sel-drop"></select>
+      </div>
+      <div class="field">
+        <label for="sel-fng">Fear &amp; Greed 지수</label>
+        <select id="sel-fng"></select>
+      </div>
+      <p class="warn" id="th-warn" hidden>기준이 바뀌었습니다. 아래 <b>연결 코드 복사</b>를 눌러 GitHub의 <code>PUSH_CONFIG</code>를 새 코드로 바꿔야 알림에 적용됩니다.</p>
+    </section>
     </div>
 
     <div id="view-brk" role="tabpanel" hidden>
