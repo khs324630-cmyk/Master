@@ -30,7 +30,6 @@ class PerDeviceThresholdTest(unittest.TestCase):
         with mock.patch.dict(os.environ, env), \
              mock.patch.object(alert, "fetch_sp500", return_value=SP), \
              mock.patch.object(alert, "fetch_fear_greed", return_value=FNG), \
-             mock.patch.object(alert.brk, "update", side_effect=RuntimeError("skip")), \
              mock.patch.object(alert, "send_webpush", side_effect=fake_push), \
              mock.patch.object(sys, "argv", ["alert.py"]):
             alert.main()

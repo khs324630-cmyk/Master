@@ -1,4 +1,4 @@
-const CACHE = "market-alert-v3";
+const CACHE = "market-alert-v4";
 const SHELL = ["./", "index.html", "app.js", "style.css", "manifest.webmanifest", "icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {

@@ -21,12 +21,6 @@
       <p class="muted" id="updated">불러오는 중…</p>
     </header>
 
-    <nav class="tabs" role="tablist">
-      <button role="tab" id="tab-market" aria-selected="true" aria-controls="view-market">시장</button>
-      <button role="tab" id="tab-brk" aria-selected="false" aria-controls="view-brk">버크셔</button>
-    </nav>
-
-    <div id="view-market" role="tabpanel">
     <section class="card" id="sp-card">
       <div class="card-head">
         <h2>S&amp;P 500</h2>
@@ -63,35 +57,6 @@
       </div>
       <p class="warn" id="th-warn" hidden>기준이 바뀌었습니다. 아래 <b>연결 코드 복사</b>를 눌러 GitHub의 <code>PUSH_CONFIG</code>를 새 코드로 바꿔야 알림에 적용됩니다.</p>
     </section>
-    </div>
-
-    <div id="view-brk" role="tabpanel" hidden>
-      <section class="card">
-        <div class="card-head">
-          <h2>버크셔 해서웨이 13F</h2>
-          <a class="chip" id="brk-link" target="_blank" rel="noopener">SEC 원문</a>
-        </div>
-        <div class="big" id="brk-total">–</div>
-        <p class="muted" id="brk-sub">불러오는 중…</p>
-        <div class="stats" id="brk-stats"></div>
-      </section>
-
-      <section class="card">
-        <div class="card-head">
-          <h2>보유 종목</h2>
-          <span class="muted" id="brk-count"></span>
-        </div>
-        <ol class="holdings" id="brk-list"></ol>
-        <button class="link" id="brk-more" hidden>전체 보기</button>
-      </section>
-
-      <section class="card" id="brk-sold-card" hidden>
-        <h2>전량 매도</h2>
-        <ul class="holdings sold" id="brk-sold"></ul>
-      </section>
-
-      <p class="muted note">13F는 분기 말 기준 미국 상장 주식 보유 현황으로, 분기 종료 후 45일 안에 공시됩니다. 새 공시가 올라오면 알림을 보냅니다.</p>
-    </div>
 
     <section class="card">
       <h2>이 기기 알림</h2>
@@ -104,7 +69,7 @@
     </section>
 
     <footer class="muted">
-      데이터: Yahoo Finance(^GSPC), CNN Fear &amp; Greed, SEC EDGAR 13F · GitHub Actions가 장중 15분마다 확인합니다.
+      데이터: Yahoo Finance(^GSPC), CNN Fear &amp; Greed · GitHub Actions가 장중 15분마다 확인합니다.
     </footer>
   </main>
 

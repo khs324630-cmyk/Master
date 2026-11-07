@@ -138,8 +138,6 @@ function render(data) {
     $("fg-rating").innerHTML = `<span class="err">데이터를 가져오지 못했습니다.</span>`;
   }
 
-  renderBrk(data.brk, data.errors && data.errors.brk);
-
   // 최근 알림
   const log = (data.alerts || []).slice().reverse();
   if (log.length) {
@@ -148,99 +146,6 @@ function render(data) {
       .join("");
   }
 }
-
-// ------------------------------------------------------------ 버크셔
-
-const fmtPct = (p) => `${Math.abs(p) >= 100 ? Math.round(p) : p.toFixed(1)}%`;
-const fmtUsd = (v) =>
-  v >= 1e9 ? `$${(v / 1e9).toFixed(v >= 1e11 ? 0 : 1)}B` : v >= 1e6 ? `$${(v / 1e6).toFixed(0)}M` : `$${fmt(v, 0)}`;
-const fmtShares = (n) =>
-  n >= 1e9 ? `${(n / 1e9).toFixed(2)}B주` : n >= 1e6 ? `${(n / 1e6).toFixed(1)}M주` : `${fmt(n, 0)}주`;
-const BADGE = {
-  new: () => `<span class="badge new">신규</span>`,
-  add: (h) => `<span class="badge add">+${fmtPct(h.shares_pct)}</span>`,
-  trim: (h) => `<span class="badge trim">${fmtPct(h.shares_pct)}</span>`,
-  hold: () => "",
-  unknown: () => "",
-};
-const TOP_N = 15;
-let brkShowAll = false;
-let brkData = null;
-
-function renderBrk(pf, error) {
-  if (!pf) {
-    $("brk-sub").innerHTML = error
-      ? `<span class="err">SEC 공시를 가져오지 못했습니다.</span>`
-      : "아직 데이터가 없습니다.";
-    return;
-  }
-  brkData = pf;
-  $("brk-total").textContent = fmtUsd(pf.total_value);
-  $("brk-sub").textContent = `${pf.quarter} 말 기준 · ${pf.filed} 공시`;
-  $("brk-link").href = pf.url;
-
-  const count = (c) => pf.holdings.filter((h) => h.change === c).length;
-  const stats = [
-    ["신규", count("new")],
-    ["확대", count("add")],
-    ["축소", count("trim")],
-    ["전량 매도", pf.sold.length],
-  ];
-  $("brk-stats").innerHTML = pf.prev_period
-    ? stats.map(([k, v]) => `<span class="stat">${k} <b>${v}</b></span>`).join("")
-    : "";
-  $("brk-count").textContent = `${pf.holdings.length}종목`;
-
-  const max = pf.holdings.length ? pf.holdings[0].weight : 1;
-  const list = brkShowAll ? pf.holdings : pf.holdings.slice(0, TOP_N);
-  $("brk-list").innerHTML = list
-    .map(
-      (h) => `<li>
-        <span class="h-name">${escapeHtml(h.name)}</span>
-        <span class="h-val">${fmtUsd(h.value)}</span>
-        <span class="h-meta">${fmtShares(h.shares)} ${(BADGE[h.change] || BADGE.hold)(h)}</span>
-        <span class="h-weight">${h.weight.toFixed(1)}%</span>
-        <span class="bar"><i style="width:${((h.weight / max) * 100).toFixed(1)}%"></i></span>
-      </li>`
-    )
-    .join("");
-  const more = $("brk-more");
-  more.hidden = pf.holdings.length <= TOP_N;
-  more.textContent = brkShowAll ? "상위 종목만 보기" : `전체 ${pf.holdings.length}종목 보기`;
-
-  $("brk-sold-card").hidden = !pf.sold.length;
-  $("brk-sold").innerHTML = pf.sold
-    .map(
-      (h) => `<li>
-        <span class="h-name">${escapeHtml(h.name)}</span>
-        <span class="h-val muted">${fmtUsd(h.prev_value)}</span>
-        <span class="h-meta"><span class="badge out">매도</span> 직전 분기 평가액</span>
-      </li>`
-    )
-    .join("");
-}
-
-$("brk-more").onclick = () => {
-  brkShowAll = !brkShowAll;
-  if (brkData) renderBrk(brkData);
-};
-
-// ------------------------------------------------------------ 탭
-
-function selectTab(name) {
-  for (const t of ["market", "brk"]) {
-    $(`tab-${t}`).setAttribute("aria-selected", String(t === name));
-    $(`view-${t}`).hidden = t !== name;
-  }
-  try {
-    localStorage.setItem("market-alert-tab", name);
-  } catch {}
-}
-$("tab-market").onclick = () => selectTab("market");
-$("tab-brk").onclick = () => selectTab("brk");
-try {
-  if (localStorage.getItem("market-alert-tab") === "brk") selectTab("brk");
-} catch {}
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);

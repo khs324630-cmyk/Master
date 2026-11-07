@@ -39,8 +39,6 @@ jobs:
       NTFY_SERVER: ${{ vars.NTFY_SERVER || 'https://ntfy.sh' }}
       DROP_THRESHOLD: ${{ vars.DROP_THRESHOLD || '-5' }}
       FNG_THRESHOLD: ${{ vars.FNG_THRESHOLD || '20' }}
-      # SEC는 연락처가 담긴 User-Agent를 요구합니다 (기본: GitHub 공개 noreply 주소)
-      SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT || format('MarketAlert {0}@users.noreply.github.com', github.repository_owner) }}
     steps:
       - uses: actions/checkout@v4
 
