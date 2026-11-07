@@ -6,12 +6,20 @@ on:
     - cron: "*/15 13-21 * * 1-5"
     # 주말·장외에도 Fear & Greed 확인용으로 하루 2번
     - cron: "0 0,12 * * *"
+  push:
+    branches: [main, master, claude/friendly-fermi-96u8fi]
+    paths: ["web/**", "alert.py", ".github/workflows/alert.yml"]
   workflow_dispatch:
     inputs:
       test:
-        description: "테스트 알림만 보내기"
+        description: "테스트 알림 보내기"
         type: boolean
         default: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: market-alert
@@ -20,8 +28,12 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     env:
+      PUSH_CONFIG: ${{ secrets.PUSH_CONFIG }}
       NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
       NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
       NTFY_SERVER: ${{ vars.NTFY_SERVER || 'https://ntfy.sh' }}
@@ -33,26 +45,34 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
 
-      - name: Test notification
-        if: ${{ inputs.test }}
-        run: python alert.py --test
+      - run: pip install -r requirements.txt
 
       - name: Restore state
-        if: ${{ !inputs.test }}
         uses: actions/cache/restore@v4
         with:
           path: state.json
           key: alert-state-${{ github.run_id }}
           restore-keys: alert-state-
 
-      - name: Check market
-        if: ${{ !inputs.test }}
-        run: python alert.py
+      - name: Check market & notify
+        run: python alert.py --out web/data.json ${{ inputs.test && '--test' || '' }}
 
       - name: Save state
-        if: ${{ !inputs.test && always() && hashFiles('state.json') != '' }}
+        if: ${{ always() && hashFiles('state.json') != '' }}
         uses: actions/cache/save@v4
         with:
           path: state.json
           key: alert-state-${{ github.run_id }}
+
+      # 웹앱(대시보드) 배포. Settings → Pages → Source를 "GitHub Actions"로 설정해야 합니다.
+      - uses: actions/configure-pages@v5
+        if: ${{ always() }}
+      - uses: actions/upload-pages-artifact@v3
+        if: ${{ always() }}
+        with:
+          path: web
+      - id: deploy
+        if: ${{ always() }}
+        uses: actions/deploy-pages@v4

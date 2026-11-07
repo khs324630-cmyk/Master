@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>마켓 알림</title>
+  <meta name="description" content="S&P 500 급락과 Fear & Greed 공포 구간 알림">
+  <meta name="theme-color" content="#0f1115">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="마켓 알림">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>마켓 알림</h1>
+      <p class="muted" id="updated">불러오는 중…</p>
+    </header>
+
+    <section class="card" id="sp-card">
+      <div class="card-head">
+        <h2>S&amp;P 500</h2>
+        <span class="chip" id="sp-rule"></span>
+      </div>
+      <div class="big"><span id="sp-price">–</span> <span class="delta" id="sp-pct"></span></div>
+      <p class="muted" id="sp-sub"></p>
+      <div class="spark" id="sp-spark"></div>
+    </section>
+
+    <section class="card" id="fg-card">
+      <div class="card-head">
+        <h2>Fear &amp; Greed</h2>
+        <span class="chip" id="fg-rule"></span>
+      </div>
+      <div class="big"><span id="fg-score">–</span> <span class="rating" id="fg-rating"></span></div>
+      <div class="gauge" aria-hidden="true">
+        <div class="gauge-fill" id="fg-fill"></div>
+        <div class="gauge-mark" id="fg-mark"></div>
+      </div>
+      <div class="gauge-labels muted"><span>극단적 공포</span><span>중립</span><span>극단적 탐욕</span></div>
+      <div class="spark" id="fg-spark"></div>
+    </section>
+
+    <section class="card">
+      <h2>이 기기 알림</h2>
+      <div id="push-area"></div>
+    </section>
+
+    <section class="card">
+      <h2>최근 알림</h2>
+      <ul class="log" id="log"><li class="muted">아직 보낸 알림이 없습니다.</li></ul>
+    </section>
+
+    <footer class="muted">
+      데이터: Yahoo Finance(^GSPC), CNN Fear &amp; Greed · GitHub Actions가 장중 15분마다 확인합니다.
+    </footer>
+  </main>
+
+  <template id="tpl-install">
+    <p>아이폰에서 알림을 받으려면 먼저 홈 화면에 앱을 추가해야 합니다.</p>
+    <ol class="steps">
+      <li>Safari 아래쪽 <b>공유</b> 버튼(□↑)을 누릅니다.</li>
+      <li><b>홈 화면에 추가</b>를 누릅니다.</li>
+      <li>홈 화면에 생긴 <b>마켓 알림</b> 아이콘으로 앱을 엽니다.</li>
+    </ol>
+  </template>
+
+  <template id="tpl-off">
+    <p>알림을 켜면 이 기기 전용 연결 코드가 만들어집니다. 이 코드를 GitHub에 한 번 등록하면 됩니다.</p>
+    <button class="primary" id="btn-enable">알림 켜기</button>
+  </template>
+
+  <template id="tpl-on">
+    <p class="ok">✓ 이 기기에서 알림이 켜져 있습니다.</p>
+    <details id="cfg-details">
+      <summary>GitHub 등록 방법 (처음 한 번)</summary>
+      <ol class="steps">
+        <li>아래 <b>연결 코드 복사</b>를 누릅니다.</li>
+        <li><a id="secret-link" target="_blank" rel="noopener">GitHub Secret 추가 페이지</a>를 엽니다.</li>
+        <li>Name에 <code>PUSH_CONFIG</code>, Secret에 복사한 코드를 붙여넣고 저장합니다.</li>
+        <li>Actions → Market Alert → Run workflow에서 <b>테스트 알림</b>을 체크하고 실행합니다.</li>
+      </ol>
+      <p class="muted">여러 기기에서 받으려면 각 기기의 코드를 <code>[코드1, 코드2]</code>처럼 대괄호로 묶어 하나의 Secret에 넣으세요. 이 코드는 비밀번호처럼 다루세요.</p>
+      <textarea id="cfg" readonly rows="5"></textarea>
+    </details>
+    <div class="row">
+      <button class="primary" id="btn-copy">연결 코드 복사</button>
+      <button id="btn-preview">알림 미리보기</button>
+    </div>
+    <button class="link" id="btn-reset">연결 코드 새로 만들기</button>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
